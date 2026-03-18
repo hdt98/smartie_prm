@@ -1,0 +1,19 @@
+{
+  "mcp": {
+    "smartie_prm": {
+      "type": "local",
+      "command": [".venv/bin/python", "mcp_server/mcp_server.py"],
+      "env": {},
+      "enabled": true
+    }
+  },
+  "agent": {
+    "default": "opencode"
+  },
+  "permission": {
+    "allow": [
+      "mcp:*",
+      "command:*"
+    ]
+  }
+}

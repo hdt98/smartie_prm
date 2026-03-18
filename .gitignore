@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test
+.pytest_cache/
+.coverage
+
+# OpenViking
+openviking_output/
+openviking_workspace_local/
+openviking_workspace_enterprise/
+
+# Tilde backup
+~
+
+# Environment files with secrets
+mcp_server/config_dev/.env.local
+mcp_server/config_prod/.env.prod
+enterprise_service/openviking_configs/local_dev.conf
+enterprise_service/openviking_configs/cloud_prod.conf
