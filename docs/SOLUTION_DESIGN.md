@@ -35,48 +35,61 @@ The OpenCode plugin directly calls OpenViking's search API, bypassing the MCP se
 ## 3. Architecture Diagrams
 
 ### Development Environment (Local)
-```
-┌─────────────────┐       ┌────────────────────┐
-│ PRM Desktop App │       │  OpenCode Plugin  │ search
-│ (OpenCode)     │──────▶│  (memsearch)     │───────────────┐
-│                 │       │  config           │               ▼
-└─────────────────┘       └────────────────────┘       ┌─────────────┐
-                                                         │  OpenViking │
-   S3 Event    ┌─────────┐   poll      ┌───────────────▶│ (Port 1934) │
- ────────────▶│ AWS SQS │────────────▶│  Indexing     └──────┬──────┘
-              │ (Dev)   │             │  Worker              │ upsert
-              └─────────┘             │ (Pushes path to)     ▼
-                                     └───────────────▶  ┌─────────────┘
-                                                          │   Qdrant    │
-                                                          │   (:6333)   │
-                                                          └─────────────┘
+
+```mermaid
+flowchart LR
+    subgraph OpenCode["PRM Desktop (OpenCode)"]
+        Plugin["OpenCode Plugin\n(memsearch, memread)"]
+    end
+
+    subgraph Services["Services"]
+        OV[("OpenViking\nPort 1934")]
+        Qdrant[("Qdrant\n:6333")]
+        SQS[("AWS SQS\nDev")]
+    end
+
+    subgraph Worker["Indexing Worker"]
+        WorkerProc[("Python Worker\nPolls SQS")]
+    end
+
+    S3[(S3 Bucket\nsmartie-dev-docs)] -->|S3 Event| SQS
+    SQS -->|poll| WorkerProc
+    WorkerProc -->|add path| OV
+    Plugin -->|search| OV
+    OV -->|upsert| Qdrant
 ```
 
 ### Production Environment (Cloud Deployment)
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              CLOUD VPC                                      │
-│                                                                              │
-│   ┌─────────────────┐       ┌──────────────────┐                            │
-│   │ PRM Desktop App │       │  OpenCode Plugin│─── search ───┐          │
-│   │ (OpenCode)      │       │                 │               │          │
-│   └─────────────────┘       └────────┬─────────┘               ▼          │
-│                                     │              ┌────────────────┐      │
-│                                     │              │   OpenViking  │      │
-│                                     │              │ (ECS/Fargate) │      │
-│                                     │              └───────┬────────┘      │
-│                                     │                      │ upsert        │
-│                                     │                      ▼              │
-│                                     │              ┌──────────────┐         │
-│                                     │              │   Qdrant     │         │
-│                                     │              │ (EC2 + EBS) │         │
-│                                     │              └──────────────┘         │
-│                                     │                                     │
-│   ┌──────────┐  S3 Event    ┌──────▼──────────┐  │                        │
-│   │  AWS S3  │─────────────▶│ Indexing Worker │──┘  add                  │
-│   └──────────┘              │ (ECS/Fargate)  │                            │
-│                              └─────────────────┘                            │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+```mermaid
+flowchart TB
+    subgraph Client["Client Side"]
+        App["PRM Desktop\n(OpenCode)"]
+    end
+
+    subgraph CloudVPC["Cloud VPC"]
+        subgraph Compute["Compute"]
+            Plugin["OpenCode Plugin"]
+            Worker["Indexing Worker\nECS/Fargate"]
+            OV["OpenViking\nECS/Fargate"]
+        end
+
+        subgraph Storage["Storage"]
+            Qdrant["Qdrant\nEC2 + EBS"]
+        end
+    end
+
+    subgraph AWS["AWS Services"]
+        S3["S3 Bucket"]
+        SQS["SQS Queue"]
+    end
+
+    App -->|search| Plugin
+    Plugin -->|search| OV
+    S3 -->|S3 Event| SQS
+    SQS -->|poll| Worker
+    Worker -->|add path| OV
+    OV -->|upsert| Qdrant
 ```
 
 ---
