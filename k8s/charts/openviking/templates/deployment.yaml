@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-openviking
+  labels:
+    app: smartie-prm
+    component: openviking
+spec:
+  replicas: {{ .Values.replicas | default 2 }}
+  selector:
+    matchLabels:
+      app: smartie-prm
+      component: openviking
+  template:
+    metadata:
+      labels:
+        app: smartie-prm
+        component: openviking
+    spec:
+      containers:
+        - name: openviking
+          image: {{ .Values.image | quote }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 1934
+              name: http
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.aws.region | default "us-east-1" }}
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-openviking
+  labels:
+    app: smartie-prm
+    component: openviking
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 1934
+      protocol: TCP
+      name: http
+  selector:
+    app: smartie-prm
+    component: openviking

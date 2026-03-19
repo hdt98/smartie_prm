@@ -1,0 +1,7 @@
+# Default values for openviking
+replicas: 2
+
+image: openviking/openviking:latest
+
+aws:
+  region: us-east-1

@@ -1,0 +1,13 @@
+# Default values for indexing-worker
+replicas: 2
+
+image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/smartie-prm:latest
+
+aws:
+  region: us-east-1
+
+sqs:
+  queueUrl: https://sqs.us-east-1.amazonaws.com/123456789012/smartie-indexing-queue
+
+openviking:
+  url: http://openviking:1934

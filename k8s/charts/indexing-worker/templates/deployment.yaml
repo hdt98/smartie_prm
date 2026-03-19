@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-indexing-worker
+  labels:
+    app: smartie-prm
+    component: indexing-worker
+spec:
+  replicas: {{ .Values.replicas | default 2 }}
+  selector:
+    matchLabels:
+      app: smartie-prm
+      component: indexing-worker
+  template:
+    metadata:
+      labels:
+        app: smartie-prm
+        component: indexing-worker
+    spec:
+      serviceAccountName: {{ .Release.Name }}-worker
+      containers:
+        - name: worker
+          image: {{ .Values.image | quote }}
+          imagePullPolicy: Always
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.aws.region | default "us-east-1" }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-aws-credentials
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-aws-credentials
+                  key: secret-access-key
+            - name: SQS_QUEUE_URL
+              value: {{ .Values.sqs.queueUrl }}
+            - name: OPENVIKING_ENTERPRISE_URL
+              value: {{ .Values.openviking.url | quote }}
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

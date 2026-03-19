@@ -1,0 +1,16 @@
+# Production overlay values
+indexing-worker:
+  replicas: 3
+  image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/smartie-prm:latest
+  aws:
+    region: us-east-1
+  sqs:
+    queueUrl: https://sqs.us-east-1.amazonaws.com/123456789012/smartie-indexing-queue
+  openviking:
+    url: http://smartie-prm-openviking:1934
+
+openviking:
+  replicas: 2
+  image: openviking/openviking:latest
+  aws:
+    region: us-east-1
