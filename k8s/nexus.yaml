@@ -1,0 +1,61 @@
+# Kubernetes manifests for Nexus deployment
+# Note: For production, Nexus is typically deployed separately as a shared service
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus
+  namespace: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus
+  template:
+    metadata:
+      labels:
+        app: nexus
+    spec:
+      containers:
+        - name: nexus
+          image: sonatype/nexus3:latest
+          ports:
+            - containerPort: 8081
+              name: http
+            - containerPort: 5000
+              name: docker
+          volumeMounts:
+            - name: nexus-data
+              mountPath: /nexus-data
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+      volumes:
+        - name: nexus-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus
+  namespace: nexus
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: http
+    - port: 5000
+      targetPort: 5000
+      name: docker
+  selector:
+    app: nexus

@@ -97,22 +97,26 @@ flowchart TB
 
 ---
 
-## 4. CI/CD Pipeline (GitOps with GitHub + ArgoCD)
+## 4. CI/CD Pipeline (Enterprise GitOps)
 
 ### Overview
 
-The CI/CD follows enterprise-grade GitOps pattern:
+The CI/CD follows enterprise-grade GitOps pattern with Jenkins and Nexus:
 
 ```mermaid
 flowchart TB
-    subgraph CI["Phase 1: CI (GitHub Actions)"]
+    subgraph Source["Source Control (GitHub)"]
         Dev["Developer\nPush/MR"]
-        GHA["GitHub\nActions"]
+        AppCode["Application\nCode"]
+        GitOpsRepo["GitOps Repo\n(hdt98/smartie-prm-gitops)"]
+    end
+
+    subgraph CI["Phase 1: CI (Jenkins)"]
+        Webhook["Webhook\nTrigger"]
+        Jenkins["Jenkins\nBuild Server"]
         Test["Tests\n& Scan"]
         Build["Build\nImage"]
-        ECR["Amazon ECR"]
-        Update["Update Helm\nvalues.yaml"]
-        GitOps["GitOps Repo\n(hdt98/smartie-prm-gitops)"]
+        Nexus["Nexus\nArtifact Registry"]
     end
 
     subgraph CD["Phase 2: CD (ArgoCD)"]
@@ -121,32 +125,47 @@ flowchart TB
         EKSCluster["EKS Cluster"]
     end
 
-    Dev -->|1. Push Code| GHA
-    GHA -->|2. Run Tests| Test
-    Test -->|3. Security Scan| Build
-    Build -->|4. Push Image| ECR
-    ECR -->|5. Update Image Tag| Update
-    Update -->|6. Commit| GitOps
-    GitOps -->|7. Detect Change| Argo
-    Argo -->|8. Sync| EKSCluster
+    Dev -->|1. Push Code| AppCode
+    AppCode -->|2. Webhook| Webhook
+    Webhook -->|3. Trigger Pipeline| Jenkins
+    Jenkins -->|4. Run Tests| Test
+    Test -->|5. Security Scan| Build
+    Build -->|6. Push to Nexus| Nexus
+    Nexus -->|7. Update Image Tag| GitOpsRepo
+    GitOpsRepo -->|8. Detect Change| Argo
+    Argo -->|9. Sync| EKSCluster
 ```
+
+### Component Responsibilities
+
+| Component | Role | Description |
+|-----------|------|-------------|
+| **GitHub** | Source Control | Application code, GitOps configurations |
+| **Jenkins** | Build Engine | Compiles code, runs tests/security scans, builds Docker images |
+| **Nexus** | Artifact Registry | Proxy/cache for Docker images and dependencies |
+| **ArgoCD** | GitOps Controller | Syncs cluster state with Git repository |
+| **EKS** | Infrastructure | Managed Kubernetes for workloads |
 
 ### Why This Stack for Enterprise
 
 | Feature | Tool | Benefit |
 |---------|------|----------|
-| **Separation of Duties** | GitHub Actions vs ArgoCD | CI builds code but never accesses production. Only ArgoCD has cluster credentials. |
-| **Auditability** | GitHub | Every production change is a Git commit with full traceability. |
+| **Separation of Duties** | Jenkins vs ArgoCD | Jenkins builds but never accesses production. Only ArgoCD has cluster credentials. |
+| **Auditability** | GitHub + Jenkins | Every change recorded as Git commit. Jenkins logs provide build traceability. |
 | **State Consistency** | ArgoCD | If someone manually alters a setting in EKS, ArgoCD automatically reverts to Git state. |
+| **Artifact Management** | Nexus | Caches dependencies, scans for vulnerabilities, ensures availability |
 
 ### Workflow
 
-1. **Developer** pushes code or opens PR
-2. **GitHub Actions** triggers pipeline:
+1. **Developer** pushes code or opens PR to GitHub
+2. **GitHub Webhook** triggers Jenkins pipeline
+3. **Jenkins** executes pipeline:
    - Run unit & integration tests
    - Security scan (Trivy/SonarQube)
    - Build Docker image
-   - Push to Amazon ECR
+   - Push to Nexus artifact registry
+4. **Jenkins** updates Helm chart image tag in GitOps repo
+5. **ArgoCD** detects drift and syncs to EKS
 3. **GitHub Actions** updates Helm chart image tag in GitOps repo
 4. **ArgoCD** detects drift and syncs to EKS
 
