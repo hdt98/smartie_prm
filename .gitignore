@@ -40,3 +40,8 @@ mcp_server/config_prod/.env.prod
 enterprise_service/openviking_configs/local_dev.conf
 enterprise_service/openviking_configs/cloud_prod.conf
 openviking/plugin/openviking-config.json
+
+# Plugin build
+openviking/plugin/node_modules/
+openviking/plugin/dist/
+openviking/plugin/*.lock

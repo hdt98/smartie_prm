@@ -1,0 +1,20 @@
+{
+  "name": "smartie-openviking-plugin",
+  "version": "1.0.0",
+  "description": "OpenViking plugin for OpenCode - Enterprise Document Search",
+  "main": "dist/openviking-plugin.js",
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/openviking-plugin.ts --outdir=dist --target=node",
+    "typecheck": "bun run tsc --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
